@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF.js Embed with Loading Screen</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.8.335/pdf.min.js"></script>
+    <style>
+        #pdf-container {
+            width: 100%;
+            height: 100vh;
+            overflow: auto;
+            display: none; /* Initially hidden */
+        }
+        canvas {
+            display: block;
+            margin: auto;
+        }
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading PDF...</div>
+    <div id="pdf-container"></div>
+    <script>
+        const url = 'path/to/your.pdf';
+
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.8.335/pdf.worker.min.js';
+
+        const loadingTask = pdfjsLib.getDocument(url);
+        loadingTask.promise.then(pdf => {
+            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                pdf.getPage(pageNumber).then(page => {
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+
+                    page.render(renderContext).promise.then(() => {
+                        document.getElementById('pdf-container').appendChild(canvas);
+
+                        if (pageNumber === pdf.numPages) {
+                            document.getElementById('loading').style.display = 'none';
+                            document.getElementById('pdf-container').style.display = 'block';
+                        }
+                    });
+                });
+            }
+        }, reason => {
+            console.error(reason);
+        });
+    </script>
+</body>
+</html>
